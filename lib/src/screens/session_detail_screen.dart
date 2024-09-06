@@ -62,10 +62,6 @@ class SessionDetailScreen extends StatelessWidget {
       spots.add(FlSpot((i + 1).toDouble(), _stageToValue(stages[i])));
     }
 
-    // Debug print
-    print('Number of data points: ${spots.length}');
-    print('Data points: $spots');
-
     return SizedBox(
       height: 300,
       child: Padding(
@@ -125,7 +121,7 @@ class SessionDetailScreen extends StatelessWidget {
             ),
             borderData: FlBorderData(show: true),
             minX: 0,
-            maxX: spots.length.toDouble() - 1,
+            maxX: spots.length - 1,
             minY: 0,
             maxY: 3,
             lineBarsData: [
@@ -172,7 +168,6 @@ class SessionDetailScreen extends StatelessWidget {
     List<String> stages = [];
     for (int i = 0; i < accelerometerData.length; i += SAMPLES_PER_MINUTE) {
       int endIndex = min(i + SAMPLES_PER_MINUTE, accelerometerData.length);
-      // use sampleSize instead of SAMPLES_PER_MINUTE to fix inaccurate data at last min
       int sampleSize = endIndex - i;
 
       double avgMovement =
@@ -187,9 +182,7 @@ class SessionDetailScreen extends StatelessWidget {
       } else {
         stages.add('Awake');
       }
-      print('avgMovement: $avgMovement');
     }
-    print('stages: $stages');
     return stages;
   }
 
@@ -209,32 +202,36 @@ class SessionDetailScreen extends StatelessWidget {
   }
 
   double _calculateSleepQuality() {
+    final length = sleepData.accelerometerData?.length;
+    print('length: $length');
+    final lightData = sleepData.lightData;
+    print('lightData: $lightData');
     if (sleepData.accelerometerData == null || sleepData.lightData == null) {
       return 0.0;
     }
 
     List<String> stages = _calculateSleepStages(sleepData.accelerometerData);
-    int deepSleepMinutes = stages.where((stage) => stage == 'Deep').length;
-    int lightSleepMinutes = stages.where((stage) => stage == 'Light').length;
+    print('sleep stages: $stages');
+    int deepSleepMinutes =
+        stages.where((stage) => stage == 'Deep sleep').length;
     int remSleepMinutes = stages.where((stage) => stage == 'REM').length;
 
+    print('deepSleepMinutes: $deepSleepMinutes');
     // Calculate scores based on ideal sleep stage percentages
     double deepSleepScore =
-        min(deepSleepMinutes / (stages.length * 0.2), 1.0) * 2; // 20% ideal
-    double lightSleepScore =
-        min(lightSleepMinutes / (stages.length * 0.5), 1.0); // 50% ideal
-    double remSleepScore =
-        min(remSleepMinutes / (stages.length * 0.25), 1.0) * 2; // 25% ideal
+        min(deepSleepMinutes / 120, 1.0) * 5; // 120min ideal
+    double remSleepScore = min(remSleepMinutes / 120, 1.0) * 5; // 120min ideal
 
     // Calculate light score
     double avgLight = sleepData.lightData!.reduce((a, b) => a + b) /
         sleepData.lightData!.length;
     double lightScore =
-        (50 - avgLight) / 10.0; // 0-5 score, lower light is better
-
+        max((50 - avgLight) / 10.0, 0); // 0-5 score, lower light is better
+    print('deepSleepScore: $deepSleepScore');
+    print('remSleepScore: $remSleepScore');
+    print('lightScore: $lightScore');
     // Combine scores (deep sleep and REM are weighted more heavily)
-    double totalScore =
-        (deepSleepScore + lightSleepScore + remSleepScore + lightScore) / 5.0;
+    double totalScore = (deepSleepScore + remSleepScore + lightScore) / 3;
     return totalScore.clamp(0.0, 5.0); // Ensure score is between 0 and 5
   }
 }
