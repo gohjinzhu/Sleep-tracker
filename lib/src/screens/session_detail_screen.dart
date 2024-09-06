@@ -202,21 +202,15 @@ class SessionDetailScreen extends StatelessWidget {
   }
 
   double _calculateSleepQuality() {
-    final length = sleepData.accelerometerData?.length;
-    print('length: $length');
-    final lightData = sleepData.lightData;
-    print('lightData: $lightData');
     if (sleepData.accelerometerData == null || sleepData.lightData == null) {
       return 0.0;
     }
 
     List<String> stages = _calculateSleepStages(sleepData.accelerometerData);
-    print('sleep stages: $stages');
     int deepSleepMinutes =
         stages.where((stage) => stage == 'Deep sleep').length;
     int remSleepMinutes = stages.where((stage) => stage == 'REM').length;
 
-    print('deepSleepMinutes: $deepSleepMinutes');
     // Calculate scores based on ideal sleep stage percentages
     double deepSleepScore =
         min(deepSleepMinutes / 120, 1.0) * 5; // 120min ideal
@@ -227,9 +221,7 @@ class SessionDetailScreen extends StatelessWidget {
         sleepData.lightData!.length;
     double lightScore =
         max((50 - avgLight) / 10.0, 0); // 0-5 score, lower light is better
-    print('deepSleepScore: $deepSleepScore');
-    print('remSleepScore: $remSleepScore');
-    print('lightScore: $lightScore');
+
     // Combine scores (deep sleep and REM are weighted more heavily)
     double totalScore = (deepSleepScore + remSleepScore + lightScore) / 3;
     return totalScore.clamp(0.0, 5.0); // Ensure score is between 0 and 5

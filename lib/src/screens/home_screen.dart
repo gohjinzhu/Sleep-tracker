@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+
 import '../models/sleep_data.dart';
 import '../screens/sleep_session_screen.dart';
 import '../screens/session_detail_screen.dart';
@@ -16,6 +18,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<SleepData> sleepEntries = [];
   SleepData? ongoingSession;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOngoingSession();
+  }
+
+  void _checkOngoingSession() async {
+    final service = FlutterBackgroundService();
+    bool isRunning = await service.isRunning();
+    if (isRunning) {
+      // If the service is running, we assume there's an ongoing session
+      setState(() {
+        ongoingSession = SleepData(
+          date: DateTime.now(),
+          startTime: DateTime
+              .now(), // This should ideally be retrieved from the service
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,13 +91,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: ongoingSession == null ? _startSleepSession : _navigateToSleepSession,
+        onPressed: ongoingSession == null
+            ? _startSleepSession
+            : _navigateToSleepSession,
         child: Icon(ongoingSession == null ? Icons.bed : Icons.visibility),
       ),
     );
   }
 
-  void _startSleepSession() {
+  void _startSleepSession() async {
     setState(() {
       ongoingSession = SleepData(
         date: DateTime.now(),
@@ -91,21 +116,14 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(
           builder: (context) => SleepSessionScreen(
             sleepData: ongoingSession!,
-            onSessionEnd: _handleSessionEnd,
+            handleSessionEnd: _handleSessionEnd,
           ),
         ),
-      ).then((_) {
-        // This will be called when returning from SleepSessionScreen
-        setState(() {
-          if (ongoingSession?.endTime != null) {
-            _handleSessionEnd(ongoingSession!);
-          }
-        });
-      });
+      );
     }
   }
 
-  void _handleSessionEnd(SleepData completedSession) {
+  void _handleSessionEnd(SleepData completedSession) async {
     setState(() {
       sleepEntries.add(completedSession);
       ongoingSession = null;
