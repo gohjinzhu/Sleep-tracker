@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:sleep_tracker/src/services/sleep_tracking_service.dart';
 import '../models/sleep_data.dart';
 import 'session_detail_screen.dart';
 
@@ -54,12 +55,11 @@ class _SleepSessionScreenState extends State<SleepSessionScreen> {
               List<double>.from(event['accelerometer'] ?? []);
           widget.sleepData.lightData = List<int>.from(event['light'] ?? []);
         });
+        print('accelerometer ${widget.sleepData.accelerometerData}');
+        print('light data ${widget.sleepData.lightData}');
         _updateLightInfo();
       }
     });
-
-    // Request initial data
-    _backgroundService.invoke('getLightData');
 
     // Set up periodic data requests
     _lightDataTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -118,10 +118,8 @@ class _SleepSessionScreenState extends State<SleepSessionScreen> {
     if (confirmed) {
       _timer?.cancel();
       _lightDataTimer?.cancel();
-      _backgroundService.invoke('stopService');
 
-      // Wait a bit for the data to be processed
-      await Future.delayed(const Duration(milliseconds: 1000));
+      await SleepTrackingService.stopService();
 
       widget.sleepData.endSession(
         accelerometerData: widget.sleepData.accelerometerData,

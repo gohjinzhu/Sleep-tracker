@@ -60,27 +60,26 @@ class SleepTrackingService {
   @pragma('vm:entry-point')
   static void onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
-    Light? light;
-    StreamSubscription? lightSubscription;
-    StreamSubscription<AccelerometerEvent>? accelerometerSubscription;
+    Light light = Light();
+    List<StreamSubscription> eventSubscriptions = [];
     AccelerometerEvent? lastEvent;
     Timer? timer;
-
+    print('service starting');
+    print('accelerometer values $accelerometerValues');
+    print('light values $lightValues');
     if (service is AndroidServiceInstance) {
-      service.on('setAsForeground').listen((event) {
+      eventSubscriptions.add(service.on('setAsForeground').listen((event) {
         service.setAsForegroundService();
-      });
+      }));
 
-      service.on('setAsBackground').listen((event) {
+      eventSubscriptions.add(service.on('setAsBackground').listen((event) {
         service.setAsBackgroundService();
-      });
+      }));
     }
 
-    service.on('stopService').listen((event) {
-      service.stopSelf();
-      lightSubscription?.cancel();
-      accelerometerSubscription?.cancel();
+    eventSubscriptions.add(service.on('stopService').listen((event) {
       timer?.cancel();
+      // ** define updateData event listener on widget that need to use the data
       service.invoke(
         'updateData',
         {
@@ -88,7 +87,35 @@ class SleepTrackingService {
           "light": lightValues,
         },
       );
-    });
+      // Cancel all event listeners
+      for (var subscription in eventSubscriptions) {
+        subscription.cancel();
+      }
+      eventSubscriptions.clear();
+
+      service.stopSelf(); // stop service instance
+      service.invoke('serviceStopped');
+    }));
+
+    eventSubscriptions.add(service.on('getLightData').listen((event) {
+      service.invoke(
+        'updateData',
+        {
+          "accelerometer": accelerometerValues,
+          "light": lightValues,
+        },
+      );
+    }));
+
+    // Start collecting sensor data
+    eventSubscriptions
+        .add(accelerometerEventStream().listen((AccelerometerEvent event) {
+      lastEvent = event;
+    }));
+
+    eventSubscriptions.add(light.lightSensorStream.listen((int luxValue) {
+      lightValues.add(luxValue);
+    }));
 
     // Start the service immediately
     if (service is AndroidServiceInstance) {
@@ -98,12 +125,6 @@ class SleepTrackingService {
       );
     }
 
-    // Start collecting sensor data
-    accelerometerSubscription =
-        accelerometerEventStream().listen((AccelerometerEvent event) {
-      lastEvent = event;
-    });
-
     timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (lastEvent != null) {
         double magnitude =
@@ -111,11 +132,6 @@ class SleepTrackingService {
         double movement = _calculateMovement(magnitude);
         accelerometerValues.add(movement);
       }
-    });
-
-    light = Light();
-    lightSubscription = light.lightSensorStream.listen((int luxValue) {
-      lightValues.add(luxValue);
     });
 
     // This timer runs every minute to update the notification
@@ -129,27 +145,29 @@ class SleepTrackingService {
         }
       }
     });
+  }
 
-    // Add a method to get the collected data
-    service.on('getData').listen((event) {
-      service.invoke(
-        'updateData',
-        {
-          "accelerometer": accelerometerValues,
-          "light": lightValues,
-        },
-      );
+  static Future<void> stopService() async {
+    final service = FlutterBackgroundService();
+    final stopCompleter = Completer<void>();
+
+    // Listen for the 'serviceStopped' event
+    final subscription = service.on('serviceStopped').listen((event) {
+      stopCompleter.complete();
     });
 
-    // Add a method to get the collected data
-    service.on('getLightData').listen((event) {
-      service.invoke(
-        'updateData',
-        {
-          "light": lightValues,
-        },
-      );
-    });
+    // Send the stop command to the service
+    service.invoke('stopService');
+
+    // Wait for the service to stop
+    await stopCompleter.future;
+
+    accelerometerValues.clear();
+    lightValues.clear();
+    print('value cleared');
+
+    // Cancel the 'serviceStopped' listener
+    subscription.cancel();
   }
 
   @pragma('vm:entry-point')

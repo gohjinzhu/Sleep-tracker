@@ -128,10 +128,12 @@ class SessionDetailScreen extends StatelessWidget {
               LineChartBarData(
                 spots: spots,
                 isCurved: true,
+                curveSmoothness: 0.3,
+                preventCurveOverShooting: true,
                 color: Colors.blue,
                 barWidth: 2,
                 isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
+                dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(show: false),
               ),
             ],
@@ -205,7 +207,7 @@ class SessionDetailScreen extends StatelessWidget {
     if (sleepData.accelerometerData == null || sleepData.lightData == null) {
       return 0.0;
     }
-
+    print('calculating accelerometer data ${sleepData.accelerometerData}');
     List<String> stages = _calculateSleepStages(sleepData.accelerometerData);
     int deepSleepMinutes =
         stages.where((stage) => stage == 'Deep sleep').length;
