@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:sleep_tracker/src/services/sleep_tracking_service.dart';
+import '../services/sleep_tracking_service.dart';
 import '../models/sleep_data.dart';
 import 'session_detail_screen.dart';
 
@@ -55,8 +55,8 @@ class _SleepSessionScreenState extends State<SleepSessionScreen> {
               List<double>.from(event['accelerometer'] ?? []);
           widget.sleepData.lightData = List<int>.from(event['light'] ?? []);
         });
-        print('accelerometer ${widget.sleepData.accelerometerData}');
-        print('light data ${widget.sleepData.lightData}');
+        // print('accelerometer ${widget.sleepData.accelerometerData}');
+        // print('light data ${widget.sleepData.lightData}');
         _updateLightInfo();
       }
     });

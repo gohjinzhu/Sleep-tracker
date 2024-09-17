@@ -116,8 +116,8 @@ class SessionDetailScreen extends StatelessWidget {
                 ),
               ),
               rightTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: true),
             minX: 0,
@@ -207,7 +207,7 @@ class SessionDetailScreen extends StatelessWidget {
     if (sleepData.accelerometerData == null || sleepData.lightData == null) {
       return 0.0;
     }
-    print('calculating accelerometer data ${sleepData.accelerometerData}');
+    // print('calculating accelerometer data ${sleepData.accelerometerData}');
     List<String> stages = _calculateSleepStages(sleepData.accelerometerData);
     int deepSleepMinutes =
         stages.where((stage) => stage == 'Deep sleep').length;

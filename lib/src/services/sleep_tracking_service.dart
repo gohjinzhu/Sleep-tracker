@@ -64,9 +64,9 @@ class SleepTrackingService {
     List<StreamSubscription> eventSubscriptions = [];
     AccelerometerEvent? lastEvent;
     Timer? timer;
-    print('service starting');
-    print('accelerometer values $accelerometerValues');
-    print('light values $lightValues');
+    // print('service starting');
+    // print('accelerometer values $accelerometerValues');
+    // print('light values $lightValues');
     if (service is AndroidServiceInstance) {
       eventSubscriptions.add(service.on('setAsForeground').listen((event) {
         service.setAsForegroundService();
@@ -164,7 +164,6 @@ class SleepTrackingService {
 
     accelerometerValues.clear();
     lightValues.clear();
-    print('value cleared');
 
     // Cancel the 'serviceStopped' listener
     subscription.cancel();
