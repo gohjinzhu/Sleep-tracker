@@ -176,7 +176,7 @@ class _SleepSessionScreenState extends State<SleepSessionScreen> {
             children: [
               const Text(
                 'Sleep in progress',
-                style: const TextStyle(fontSize: 24),
+                style: TextStyle(fontSize: 24),
               ),
               const SizedBox(height: 20),
               Text(
