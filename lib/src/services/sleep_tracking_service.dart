@@ -53,6 +53,7 @@ class SleepTrackingService {
   static Future<void> _requestPermissions() async {
     await Permission.activityRecognition.request();
     await Permission.sensors.request();
+    await Permission.notification.request();
     // Note: HIGH_SAMPLING_RATE_SENSORS doesn't have a specific permission in the plugin,
     // it's generally covered by the sensors permission
   }
@@ -64,17 +65,13 @@ class SleepTrackingService {
     List<StreamSubscription> eventSubscriptions = [];
     AccelerometerEvent? lastEvent;
     Timer? timer;
-    // print('service starting');
-    // print('accelerometer values $accelerometerValues');
-    // print('light values $lightValues');
-    if (service is AndroidServiceInstance) {
-      eventSubscriptions.add(service.on('setAsForeground').listen((event) {
-        service.setAsForegroundService();
-      }));
 
-      eventSubscriptions.add(service.on('setAsBackground').listen((event) {
-        service.setAsBackgroundService();
-      }));
+    // Start the service immediately
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: "Sleep Tracking Active",
+        content: "Monitoring your sleep...",
+      );
     }
 
     eventSubscriptions.add(service.on('stopService').listen((event) {
@@ -117,32 +114,12 @@ class SleepTrackingService {
       lightValues.add(luxValue);
     }));
 
-    // Start the service immediately
-    if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: "Sleep Tracking Active",
-        content: "Monitoring your sleep...",
-      );
-    }
-
     timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (lastEvent != null) {
         double magnitude =
             _calculateMagnitude(lastEvent!.x, lastEvent!.y, lastEvent!.z);
         double movement = _calculateMovement(magnitude);
         accelerometerValues.add(movement);
-      }
-    });
-
-    // This timer runs every minute to update the notification
-    Timer.periodic(const Duration(minutes: 1), (timer) async {
-      if (service is AndroidServiceInstance) {
-        if (await service.isForegroundService()) {
-          service.setForegroundNotificationInfo(
-            title: "Sleep Tracking Active",
-            content: "Monitoring your sleep...",
-          );
-        }
       }
     });
   }
